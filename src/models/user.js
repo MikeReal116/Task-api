@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Task = require('./task');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -53,6 +54,11 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
+userSchema.pre('remove', async function (next) {
+  await Task.deleteMany({ owner: this._id });
+  next();
+});
+
 userSchema.statics.checkLoginCredential = async (email, password) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error('Unable to login');
@@ -67,6 +73,13 @@ userSchema.methods.generateAuthToken = async function () {
     'mongodbposgresqlfirebase'
   );
   return token;
+};
+
+userSchema.methods.toJSON = function () {
+  const user = this.toObject();
+  delete user.password;
+  delete user.tokens;
+  return user;
 };
 
 const User = mongoose.model('User', userSchema);
