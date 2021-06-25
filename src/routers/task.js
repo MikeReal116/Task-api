@@ -2,6 +2,7 @@ const express = require('express');
 const Task = require('../models/task');
 
 const router = new express.Router();
+
 router.post('/tasks', async (req, res) => {
   const task = new Task(req.body);
   try {
@@ -39,12 +40,11 @@ router.patch('/tasks/:id', async (req, res) => {
   if (!isValid) return res.status(400).send({ error: 'Invalid updates' });
   try {
     const id = req.params.id;
-    const user = await Task.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true
-    });
-    if (!user) return res.status(404).send();
-    res.send(user);
+    const task = await Task.findById(id);
+    if (!task) return res.status(404).send();
+    updateKeys.forEach((key) => (task[key] = req.body[key]));
+    await task.save();
+    res.send(task);
   } catch (error) {
     res.status(400).send(error);
   }

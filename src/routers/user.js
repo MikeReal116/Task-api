@@ -6,10 +6,27 @@ const router = new express.Router();
 router.post('/users', async (req, res) => {
   const user = new User(req.body);
   try {
+    const token = await user.generateAuthToken();
+    user.tokens = user.tokens.concat({ token });
     await user.save();
     res.status(201).send(user);
   } catch (error) {
     res.status(400).send(error);
+  }
+});
+
+router.post('/users/login', async (req, res) => {
+  try {
+    const user = await User.checkLoginCredential(
+      req.body.email,
+      req.body.password
+    );
+    const token = await user.generateAuthToken();
+    user.tokens = user.tokens.concat({ token });
+    await user.save();
+    res.send(user);
+  } catch (error) {
+    res.status(400).send();
   }
 });
 
@@ -38,13 +55,14 @@ router.patch('/users/:id', async (req, res) => {
   const fields = ['name', 'email', 'password', 'age'];
   const updateKeys = Object.keys(req.body);
   const isValid = updateKeys.every((key) => fields.includes(key));
+
   if (!isValid) return res.status(400).send({ error: 'Invalid updates' });
+
   try {
-    const user = await User.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true
-    });
+    const user = await User.findById(id);
     if (!user) return res.status(404).send();
+    updateKeys.forEach((item) => (user[item] = req.body[item]));
+    await user.save();
     res.send(user);
   } catch (error) {
     res.status(400).send(error);
