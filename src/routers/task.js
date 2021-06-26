@@ -15,9 +15,27 @@ router.post('/tasks', auth, async (req, res) => {
 });
 
 router.get('/tasks', auth, async (req, res) => {
+  const match = {};
+  if (req.query.completed) match.completed = req.query.completed === 'true';
+  const sort = {};
+  if (req.query.sortBy) {
+    const [field, order] = req.query.sortBy.split(':');
+    sort[field] = order === 'asc' ? 1 : -1;
+  }
+
   try {
-    const tasks = await Task.find({ owner: req.user._id });
-    res.send(tasks);
+    await req.user
+      .populate({
+        path: 'tasks',
+        match,
+        options: {
+          limit: parseInt(req.query.limit),
+          skip: parseInt(req.query.skip),
+          sort
+        }
+      })
+      .execPopulate();
+    res.send(req.user.tasks);
   } catch (error) {
     res.status(500).send(error);
   }
