@@ -22,6 +22,10 @@ router.get('/tasks', auth, async (req, res) => {
     const [field, order] = req.query.sortBy.split(':');
     sort[field] = order === 'asc' ? 1 : -1;
   }
+  let selected;
+  if (req.query.fields) {
+    selected = req.query.fields.split(',').join(' ');
+  }
 
   try {
     await req.user
@@ -31,7 +35,8 @@ router.get('/tasks', auth, async (req, res) => {
         options: {
           limit: parseInt(req.query.limit),
           skip: parseInt(req.query.skip),
-          sort
+          sort,
+          select: selected
         }
       })
       .execPopulate();

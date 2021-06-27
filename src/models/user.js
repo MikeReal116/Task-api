@@ -79,10 +79,7 @@ userSchema.statics.checkLoginCredential = async (email, password) => {
 };
 
 userSchema.methods.generateAuthToken = async function () {
-  const token = jwt.sign(
-    { _id: this._id.toString() },
-    'mongodbposgresqlfirebase'
-  );
+  const token = jwt.sign({ _id: this._id.toString() }, process.env.TOKEN);
   return token;
 };
 
